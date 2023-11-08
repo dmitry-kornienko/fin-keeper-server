@@ -28,7 +28,7 @@ const login = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 bill: user.bill,
-                supliers: user.supliers,
+                role: user.role,
                 token: jwt.sign({ _id: user._id }, secret, {
                     expiresIn: "30d",
                 }),
@@ -83,6 +83,7 @@ const register = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 bill: user.bill,
+                role: user.role,
                 token: jwt.sign({ _id: user._id }, secret, {
                     expiresIn: "10d",
                 }),
@@ -175,6 +176,27 @@ const updatePassword = async (req, res) => {
 };
 
 /**
+ * @route GET /api/user
+ * @desc Все пользователи
+ * @access Private, Admin
+ */
+const allUsers = async (req, res) => {
+    try {
+        const users = await UserModel.find().exec();
+
+        for (const user of users) {
+          if (user.suppliers.length > 0) {
+            await user.populate("suppliers").execPopulate();
+          }
+        }
+
+        return res.status(200).json(users);
+    } catch (error) {
+        res.status(500).json({ message: "Не удалось получить всех пользователей" });
+    }
+};
+
+/**
  * @route GET /api/user/current
  * @desc Текущий пользователь
  * @access Private
@@ -188,5 +210,6 @@ module.exports = {
     register,
     updateInfo,
     updatePassword,
+    allUsers,
     current,
 };

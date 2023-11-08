@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { login, register, updateInfo, updatePassword, current } = require('../controllers/users');
+const { login, register, updateInfo, updatePassword, allUsers, current } = require('../controllers/users');
 const { auth } = require('../middleware/auth');
+const { isAdmin } = require('../middleware/isAdmin');
 
 // api/user/login 
 router.post('/login', login);
@@ -13,5 +14,7 @@ router.patch('/update-info/:id', auth, updateInfo);
 router.patch('/update-password/:id', auth, updatePassword);
 // api/user/current 
 router.get('/current', auth, current);
+// api/user 
+router.get('/', auth, isAdmin, allUsers);
 
 module.exports = router;
