@@ -108,7 +108,7 @@ const updateInfo = async (req, res) => {
         const { id } = req.params;
         const { name, email } = req.body;
 
-        await UserModel.findOneAndUpdate(
+        const user = await UserModel.findOneAndUpdate(
             {
                 _id: id,
             },
@@ -120,7 +120,7 @@ const updateInfo = async (req, res) => {
             }
         );
 
-        res.status(204);
+        res.status(200).json(user);
     } catch (error) {
         res.status(500).json({
             message: "Не удалось изменить информацию о пользователе",
