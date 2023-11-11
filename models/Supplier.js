@@ -11,8 +11,8 @@ const SupplierSchema = new mongoose.Schema({
     },
     tax_from: {
         type: String,
-        enum: ["value1", "value2", "value3"],
-        default: "value1"
+        enum: ["ppvz_for_pay", "retail_amount", "var3", "var4"],
+        default: "ppvz_for_pay"
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
