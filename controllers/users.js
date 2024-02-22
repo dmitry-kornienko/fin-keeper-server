@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { UserModel } = require("../models/User");
+const { SupplierModel } = require("../models/Supplier");
 
 /**
  * @route POST /api/user/login
@@ -17,14 +18,16 @@ const login = async (req, res) => {
                 .json({ message: "Пожалуйста, заполните обязательные поля" });
         }
 
-        const user = await UserModel.findOne({ email: req.body.email });
+        const user = await UserModel.findOne({ email: req.body.email })
         const isPasswordCorrect =
             user && (await bcrypt.compare(password, user.password));
         const secret = process.env.JWT_SECRET;
 
+        const suppliers = await SupplierModel.find({ user: user._id});
+
         if (user && isPasswordCorrect && secret) {
             res.status(200).json({
-                id: user._id,
+                _id: user._id,
                 name: user.name,
                 email: user.email,
                 bill: user.bill,
@@ -32,6 +35,7 @@ const login = async (req, res) => {
                 token: jwt.sign({ _id: user._id }, secret, {
                     expiresIn: "30d",
                 }),
+                suppliers: suppliers
             });
         } else {
             return res
@@ -79,7 +83,7 @@ const register = async (req, res) => {
 
         if (user && secret) {
             res.status(201).json({
-                id: user._id,
+                _id: user._id,
                 name: user.name,
                 email: user.email,
                 bill: user.bill,
@@ -87,6 +91,7 @@ const register = async (req, res) => {
                 token: jwt.sign({ _id: user._id }, secret, {
                     expiresIn: "10d",
                 }),
+                suppliers: []
             });
         } else {
             return res
@@ -202,7 +207,8 @@ const allUsers = async (req, res) => {
  * @access Private
  */
 const current = async (req, res) => {
-    res.status(200).json(req.user);
+    const user = await UserModel.findOne({ _id: req.user._id })
+    res.status(200).json(user);
 };
 
 module.exports = {

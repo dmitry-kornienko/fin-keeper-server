@@ -1,15 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { supplier, add, edit, deleteOne } = require('../controllers/suppliers');
+const { supplier, suppliersCurrentUser, add, edit, changeActiveSupplier, deleteOne } = require('../controllers/suppliers');
 const { auth } = require('../middleware/auth');
 const { isAdmin } = require('../middleware/isAdmin');
 
-// // api/supplier/:id 
-router.get('/:id', auth, supplier);
+
+// api/supplier 
+router.get('/', auth, suppliersCurrentUser);
 // api/supplier/add 
 router.post('/add', auth, add);
 // api/supplier/edit/:id 
 router.patch('/edit/:id', auth, edit);
+// // api/supplier/delete/:id 
+router.patch('/change-active-supplier/:id', auth, changeActiveSupplier);
 // // api/supplier/delete/:id 
 router.delete('/supplier/delete/:id', auth, deleteOne);
 

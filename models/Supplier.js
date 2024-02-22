@@ -23,6 +23,10 @@ const SupplierSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    is_active: {
+        type: Boolean,
+        default: false,
+    },
     reports: {
         type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Report" }],
         default: []

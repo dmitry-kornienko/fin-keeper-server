@@ -2,7 +2,7 @@ const { SupplierModel } = require("../models/Supplier");
 const { UserModel } = require("../models/User");
 
 /**
- * @route POST /api/supplier/:id
+ * @route GET /api/supplier/:id
  * @desc Получение поставщика
  * @access Private
  */
@@ -22,6 +22,28 @@ const supplier = async (req, res) => {
         res.status(500).json({ message: "Что-то пошло не так" });
     }
 };
+
+/**
+ * @route GET /api/supplier
+ * @desc Получение пвсех поставщиков пользователя
+ * @access Private
+ */
+const suppliersCurrentUser = async (req, res) => {
+    try {
+        const user = req.user
+        const suppliers = await SupplierModel.find({ user: user._id });
+
+        if (!suppliers) {
+            return res.status(404).json({ message: "Не удалось получить поставщиков" });
+        }
+
+        return res.status(200).json(suppliers);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Что-то пошло не так" });
+    }
+};
+
 /**
  * @route POST /api/supplier/add
  * @desc Добавление поставщика
@@ -41,9 +63,24 @@ const add = async (req, res) => {
             tax_from,
             token_stat,
             user: userId,
+            is_active: true,
         });
 
         const supplier = await doc.save();
+
+        await SupplierModel.updateMany(
+            {
+                user: userId,
+                _id: {
+                    $ne: supplier._id
+                },
+            },
+            {
+                $set: {
+                    is_active: false
+                }
+            }
+        )
 
         await UserModel.updateOne(
             {
@@ -103,15 +140,16 @@ const deleteOne = async (req, res) => {
  */
 const edit = async (req, res) => {
     try {
-        const { id, name, tax_rate, tax_from, token_stat } = req.body;
+        const { _id, name, tax_rate, tax_from, token_stat } = req.body;
+        console.log(req.body)
 
-        if (!id || !name || tax_rate || !tax_from || !token_stat) {
+        if (!_id || !name || !tax_rate || !tax_from || !token_stat) {
             return res.status(400).json({ message: "Заполните все поля" });
         }
         
         await SupplierModel.updateOne(
             {
-                _id: id
+                _id: _id
             },
             {
                 $set: {
@@ -130,9 +168,48 @@ const edit = async (req, res) => {
     }
 };
 
+/**
+ * @route PATCH /api/supplier/change-active-supplier/:id
+ * @desc Изменение активного поставщика
+ * @access Private
+ */
+const changeActiveSupplier = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).json({ message: "Не удалось распознать id поставщика" });
+        }
+
+        await SupplierModel.updateMany({}, {
+            $set: {
+                is_active: false
+            }
+        })
+        
+        await SupplierModel.updateOne(
+            {
+                _id: id
+            },
+            {
+                $set: {
+                    is_active: true
+                }
+            }
+        )
+
+        return res.status(201).json({ message: "Активный поставщик изменен" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Что-то пошло не так" });
+    }
+}
+
 module.exports = {
     add,
     supplier,
+    suppliersCurrentUser,
     deleteOne,
     edit,
+    changeActiveSupplier,
 };
