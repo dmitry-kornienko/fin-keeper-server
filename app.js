@@ -21,7 +21,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.use('/api/user', require('./routes/users'));
-app.use('/api/supplier', require('./routes/suppliers'));
+app.use('/api/good', require('./routes/goods'));
 app.use('/api/report', require('./routes/reports'));
 
 module.exports = app;

@@ -8,6 +8,11 @@ const ReportSchema = new mongoose.Schema({
     date_from: String, 
     date_to: String,
 
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    },
+
     sale_sum_before_comission: Number, // Продажа до вычета комиссии (1)
     sale_count_before_comission: Number, // Кол-во продаж до вычета комиссии (2)
 
@@ -69,21 +74,7 @@ const ReportSchema = new mongoose.Schema({
 
     total_payment: Number, // Итого к оплате (40)
 
-    // cost_price_sum: Number, // Себестоимость товара (41)
-    // cost_price_precent: Number, // % Себестоимости (42)
-
-    // gross_profit: Number, // Валовая прибыль (43)
-
-    // tax_sum: Number, // Налоги (44)
-    // tax_precent: Number, // Процентная ставка налога (45)
-
-    // final_profit: Number, // Итоговая прибыль (46)
-
-    // investment_return: Number, // Рентабельность вложений (47)
-
-    business_costs: Number, // Расходы бизнеса (48)
-
-    // net_profit: Number, // Чистая прибыль (49)
+    tax_sum: Number, // Налоги (44)
 
     // Состав отчета по артикулам
     composition: [{

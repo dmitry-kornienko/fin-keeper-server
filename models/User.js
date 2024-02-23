@@ -10,22 +10,17 @@ const UserSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
-    role: {
-        type: String,
-        enum: ["user", "admin", "moderator"],
-        default: "user",
-    },
     password: {
         type: String,
         required: true,
     },
+    tokenWB: {
+        type: String,
+        default: "",
+    },
     bill: {
         type: Number,
         default: 5,
-    },
-    suppliers: {
-        type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Supplier" }],
-        default: [],
     },
 });
 

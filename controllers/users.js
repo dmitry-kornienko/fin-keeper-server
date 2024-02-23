@@ -1,7 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { UserModel } = require("../models/User");
-const { SupplierModel } = require("../models/Supplier");
 
 /**
  * @route POST /api/user/login
@@ -23,7 +22,6 @@ const login = async (req, res) => {
             user && (await bcrypt.compare(password, user.password));
         const secret = process.env.JWT_SECRET;
 
-        const suppliers = await SupplierModel.find({ user: user._id});
 
         if (user && isPasswordCorrect && secret) {
             res.status(200).json({
@@ -31,11 +29,9 @@ const login = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 bill: user.bill,
-                role: user.role,
                 token: jwt.sign({ _id: user._id }, secret, {
                     expiresIn: "30d",
                 }),
-                suppliers: suppliers
             });
         } else {
             return res
@@ -54,9 +50,9 @@ const login = async (req, res) => {
  */
 const register = async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, tokenWB } = req.body;
         if (!name || !email || !password) {
-            return res.status(400).json({ message: "Заполните все поля" });
+            return res.status(400).json({ message: "Заполните обязательные поля" });
         }
 
         const registeredUser = await UserModel.findOne({
@@ -76,6 +72,7 @@ const register = async (req, res) => {
             name,
             email,
             password: hashedPassword,
+            tokenWB
         });
 
         const user = await doc.save();
@@ -87,11 +84,10 @@ const register = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 bill: user.bill,
-                role: user.role,
+                tokenWB: user.tokenWB,
                 token: jwt.sign({ _id: user._id }, secret, {
                     expiresIn: "10d",
                 }),
-                suppliers: []
             });
         } else {
             return res
@@ -181,27 +177,6 @@ const updatePassword = async (req, res) => {
 };
 
 /**
- * @route GET /api/user
- * @desc Все пользователи
- * @access Private, Admin
- */
-const allUsers = async (req, res) => {
-    try {
-        const users = await UserModel.find().exec();
-
-        for (const user of users) {
-          if (user.suppliers.length > 0) {
-            await user.populate("suppliers").execPopulate();
-          }
-        }
-
-        return res.status(200).json(users);
-    } catch (error) {
-        res.status(500).json({ message: "Не удалось получить всех пользователей" });
-    }
-};
-
-/**
  * @route GET /api/user/current
  * @desc Текущий пользователь
  * @access Private
@@ -216,6 +191,5 @@ module.exports = {
     register,
     updateInfo,
     updatePassword,
-    allUsers,
     current,
 };

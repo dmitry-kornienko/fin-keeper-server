@@ -1,6 +1,5 @@
 const { GoodModel } = require("../models/Good");
 const { ReportModel } = require('../models/Report');
-const { SupplierModel } = require("../models/Supplier");
 const axios = require('axios').default;
 
 /**
@@ -17,20 +16,17 @@ const add = async (req, res) => {
         }
 
         const user = req.user
-        const activeSupplier = await SupplierModel.findOne({ user: user._id, is_active: true })
 
         const config = {
             method: 'get',
             url: `https://statistics-api.wildberries.ru/api/v1/supplier/reportDetailByPeriod?dateFrom=${dateFrom}&dateTo=${dateTo}`,
             headers: {
-              'Authorization': activeSupplier.token_stat
+              'Authorization': user.tokenWB
             },
         };
 
         const response = await axios(config);
         const goods = await GoodModel.find();
-
-        const arrayReportsID = [...new Set(response.data.map(i => i.realizationreport_id))];
 
         const getRetailAmountOfArticle = (article) => {
             let sum = 0;
@@ -92,31 +88,13 @@ const add = async (req, res) => {
             return sum.toFixed(2);
         }
 
-        const getCostPriceSumOfReport = (reportComposition) => {
-            let sum = 0
-            reportComposition.forEach(async el => {
-                const complect = goods.find(i => i.article == el.article);
-                if (complect) {
-                    sum += Number(complect.cost_price) * Number(el.sale_count)
-                }
-                 else {
-                    const doc = new GoodModel({
-                        article: el.article,
-                        cost_price: 0
-                    });
-
-                    const newGood = await doc.save();
-                }
-            })
-            return sum
-        }
-
         const getReport = (arrayFromWB) => {
 
             const report = {
-                realizationreport_id: arrayFromWB[0].realizationreport_id,
+                realizationreport_id: arrayFromWB.realizationreport_id,
                 date_from: dateFrom,
                 date_to: dateTo,
+                user: user._id,
                 sale_sum_before_comission: 0,
                 sale_count_before_comission: 0,
                 return_sum_before_comission: 0,
@@ -157,15 +135,8 @@ const add = async (req, res) => {
                 taking_payment: 0,
                 other_deductions: 0,
                 total_payment: 0,
-                // cost_price_sum: 0,
-                // cost_price_precent: 0,
-                // gross_profit: 0,
-                // tax_sum: 0,
-                // tax_precent: 0,
+                tax_sum: 0,
                 final_profit: 0,
-                // investment_return: 0,
-                business_costs: 0,
-                // net_profit: 0,
                 composition: [],
             }
 
@@ -234,11 +205,21 @@ const add = async (req, res) => {
                     report.additional_payment += row.additional_payment; // 036
                 }
                 if (!report.composition.find(i => i.article == row.sa_name) && row.supplier_oper_name == "Продажа") {
-                    const complect = goods.find(i => i.article == row.sa_name);
-                    
+                    const good = goods.find(i => i.article == row.sa_name);
+
+                    if (!good) {
+                        async function addNewGood() {
+                            const docOfNewGood = new GoodModel({
+                                article: row.sa_name,
+                            });
+                            await docOfNewGood.save()
+                        }
+                        addNewGood();
+                    }
+
                     report.composition.push({
-                        article: complect ? complect.article : row.sa_name,
-                        cost_price: complect ? complect.cost_price : 0,
+                        article: good ? good.article : row.sa_name,
+                        cost_price: good ? good.cost_price : 0,
                         retail_amount: getRetailAmountOfArticle(row.sa_name),
                         sale_count: getSaleCountOfArticle(row.sa_name),
                         return_count: getReturnCountOfArticle(row.sa_name),
@@ -256,38 +237,24 @@ const add = async (req, res) => {
             report.ppvz_for_pay = report.sale_sum_after_comission - report.return_sum_after_comission + report.adjustment_amount_sum; // 028
             report.delivery_count = report.delivery_to_customer_count + report.delivery_return_count; // 034
             report.total_payment = report.ppvz_for_pay - report.delivery_sum - report.penalty - report.additional_payment - report.storage - report.taking_payment - report.other_deductions; // 040
-            // report.cost_price_sum = getCostPriceSumOfReport(report.composition); // 041
-            // report.cost_price_precent = report.cost_price_sum / (report.sale_sum_before_comission - report.return_sum_before_comission); // 042
-            // report.gross_profit = report.total_payment - report.cost_price_sum; // 043
-            // report.tax_sum = report.sale * 0.07; // 044
-            // report.final_profit = report.gross_profit - report.tax_sum; // 046
-            // report.investment_return = report.final_profit / report.cost_price_sum * 100; // 047
-            // report.net_profit = report.final_profit - report.business_costs; // 049
+            report.tax_sum = report.sale * 0.07; // 044
 
             return report
         }
 
-        arrayReportsID.forEach( async id => {
-            const dataOfOneReport = response.data.filter(row => row.realizationreport_id == id);
+        const report = getReport(response.data);
 
-            const report = getReport(dataOfOneReport);
+        const addedReport = await ReportModel.findOne({ realizationreport_id: report.realizationreport_id });
 
-            const addedReport = await ReportModel.findOne({ realizationreport_id: report.realizationreport_id });
+        if (addedReport) {
+            return res.status(400).json({ message: 'Отчет с таким ID уже существует' });
+        }
 
-            if (addedReport) {
-                return res.status(400).json({ message: 'Отчет с таким ID уже существует' });
-            }
+        const doc = new ReportModel(report);
 
-            // if (report.composition.some(good => good.cost_price == 0)) {
-            //     return res.status(500).json({ message: "В отчете есть товары, которые не добавлены в систему. Перейдите к комплектам и отредактируйте новые товары. Затем повторите запрос отчета" })
-            // }
-
-            const doc = new ReportModel(report);
-
-            const reportForDB = await doc.save();
+        const reportForDB = await doc.save();
         
-            res.status(200).json(reportForDB);
-        });        
+        res.status(200).json(reportForDB);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Что-то пошло не так" });
