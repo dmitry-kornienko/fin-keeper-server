@@ -216,6 +216,7 @@ const add = async (req, res) => {
                         async function addNewGood() {
                             const docOfNewGood = new GoodModel({
                                 article: row.sa_name,
+                                user: user._id
                             });
                             await docOfNewGood.save()
                         }

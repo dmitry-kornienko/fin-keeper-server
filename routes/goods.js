@@ -4,9 +4,9 @@ const { good, all, add, update, remove } = require('../controllers/goods');
 const { auth } = require('../middleware/auth');
 
 // api/good 
-router.get('/', all);
+router.get('/', auth, all);
 // api/good/:id 
-router.get('/:id', good);
+router.get('/:id', auth, good);
 // api/good/add 
 router.post('/add', auth, add);
 // api/good/update/:id 

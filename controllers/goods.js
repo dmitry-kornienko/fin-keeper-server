@@ -2,12 +2,14 @@ const { GoodModel } = require("../models/Good");
 
 /**
  * @route GET /api/good
- * @desc Все товары
- * @access Public
+ * @desc Все товары пользователя
+ * @access Private
  */
 const all = async (req, res) => {
     try {
-        const goods = await GoodModel.find();
+        const user = req.user;
+
+        const goods = await GoodModel.find({ user: user._id });
 
         res.status(200).json(goods);
     } catch {
@@ -18,14 +20,15 @@ const all = async (req, res) => {
 /**
  * @route GET /api/good/:id
  * @desc Товар
- * @access Public
+ * @access Private
  */
 const good = async (req, res) => {
     try {
         const { id } = req.params;
-
-        const good = await GoodModel.findOne({ _id: id });
-
+        const user = req.user;
+        
+        const good = await GoodModel.findOne({ _id: id, user: user._id });
+        
         res.status(200).json(good);
     } catch {
         res.status(500).json({ message: "Не удалось получить информацию о товаре" });
@@ -36,9 +39,10 @@ const good = async (req, res) => {
  * @route POST /api/good/add
  * @desc Добавление товара
  * @access Private
- */
+*/
 const add = async (req, res) => {
     try {
+        const user = req.user;
         const { article, cost_price } = req.body;
 
         if (!article || !cost_price) {
@@ -47,7 +51,8 @@ const add = async (req, res) => {
 
         const doc = new GoodModel({
             article,
-            cost_price
+            cost_price,
+            user: user._id
         });
 
         const good = await doc.save();
@@ -65,11 +70,14 @@ const add = async (req, res) => {
  */
 const update = async (req, res) => {
     try {
-        const { _id, article, cost_price } = req.body;
+        const user = req.user;
+        const { id } = req.params;
+        const { article, cost_price } = req.body;
 
         await GoodModel.findOneAndUpdate(
             {
-                _id
+                _id: id,
+                user: user._id
             },
             {
                 article,
@@ -91,8 +99,13 @@ const update = async (req, res) => {
 const remove = async (req, res) => {
     try {
         const { id } = req.params;
+        const user = req.user;
 
-        await GoodModel.findOneAndDelete({ _id: id });
+        const deletedGood = await GoodModel.findOneAndDelete({ _id: id, user: user._id });
+
+        if (!deletedGood) {
+            return res.status(400).json({ message: "Не удалось удалить товар" });
+        }
 
         res.status(204).json({ message: "Товар удален" });
     } catch {
