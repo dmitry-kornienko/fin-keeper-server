@@ -9,7 +9,7 @@ const { UserModel } = require("../models/User");
  */
 const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, tokenWB } = req.body;
 
         if (!email || !password) {
             return res
@@ -29,6 +29,7 @@ const login = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 bill: user.bill,
+                tokenWB: user.tokenWB,
                 token: jwt.sign({ _id: user._id }, secret, {
                     expiresIn: "30d",
                 }),
