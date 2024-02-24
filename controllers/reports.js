@@ -1,4 +1,5 @@
 const { GoodModel } = require("../models/Good");
+const { UserModel } = require("../models/User");
 const { ReportModel } = require('../models/Report');
 const axios = require('axios').default;
 
@@ -15,7 +16,11 @@ const add = async (req, res) => {
             return res.status(400).json({ message: "Пожалуйста, укажите даты отчета" });
         }
 
-        const user = req.user
+        const user = req.user;
+
+        if (user.bill <= 0) {
+            return res.status(400).json({ message: "Недостаточно средств на балансе." });
+        }
 
         const config = {
             method: 'get',
@@ -91,7 +96,7 @@ const add = async (req, res) => {
         const getReport = (arrayFromWB) => {
 
             const report = {
-                realizationreport_id: arrayFromWB.realizationreport_id,
+                realizationreport_id: arrayFromWB[0].realizationreport_id,
                 date_from: dateFrom,
                 date_to: dateTo,
                 user: user._id,
@@ -253,6 +258,8 @@ const add = async (req, res) => {
         const doc = new ReportModel(report);
 
         const reportForDB = await doc.save();
+
+        await UserModel.findOneAndUpdate({ _id: user._id }, { $inc: { bill: -1 } });
         
         res.status(200).json(reportForDB);
     } catch (error) {
@@ -261,6 +268,93 @@ const add = async (req, res) => {
     }
 };
 
+/**
+ * @route GET /api/report
+ * @desc Получение всех точетов пользователя
+ * @access Private
+ */
+const all = async (req, res) => {
+    try {
+        const user = req.user;
+
+        const reports = await ReportModel.find({ user: user._id });
+
+        res.status(200).json(reports);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Не удалось получить отчеты" });
+    }
+};
+
+/**
+ * @route GET /api/report/:id
+ * @desc Получение одного отчета
+ * @access Private
+ */
+const report = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
+
+        const report = await ReportModel.findOne({ _id: id, user: user._id });
+
+        if (!report) {
+            return res.status(400).json({ message: "Отчет не найден" });
+        }
+
+        res.status(200).json(report);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Не удалось получить отчет" });
+    }
+};
+
+/**
+ * @route PATCH /api/report/update-cost-price/:id
+ * @desc Изменение себестоимости товара в отчете
+ * @access Private
+ */
+const editCostPriceOfArticle = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { article, cost_price } = req.body;
+
+        await ReportModel.updateOne({ _id: id, 'composition.article': article }, { $set: { 'composition.$.cost_price': cost_price } });
+
+        res.status(200).json({ message: "Себестоимость товара в отчете изменена" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Не удалось изменить себестоимость" });
+    }
+};
+
+/**
+ * @route DELETE /api/report/remove/:id
+ * @desc Удаление отчета
+ * @access Private
+ */
+const remove = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
+
+        const deletedReport = await ReportModel.findOneAndDelete({ _id: id, user: user._id });
+
+        if (!deletedReport) {
+            return res.status(400).json({ message: "Не удалось удалить отчет" })
+        }
+
+        res.status(200).json({ message: "Отчет удален" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Не удалось удалить отчет" });
+    }
+};
+
 module.exports = {
     add,
+    all,
+    report,
+    editCostPriceOfArticle,
+    remove
 };
