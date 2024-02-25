@@ -316,9 +316,10 @@ const report = async (req, res) => {
 const editCostPriceOfArticle = async (req, res) => {
     try {
         const { id } = req.params;
-        const { article, cost_price } = req.body;
-
-        await ReportModel.updateOne({ _id: id, 'composition.article': article }, { $set: { 'composition.$.cost_price': cost_price } });
+        const data = req.body;
+        data.forEach(async (i) => {
+            await ReportModel.updateOne({ _id: id, 'composition.article': i.article }, { $set: { 'composition.$.cost_price': i.cost_price } });
+        });
 
         res.status(200).json({ message: "Себестоимость товара в отчете изменена" });
     } catch (error) {
