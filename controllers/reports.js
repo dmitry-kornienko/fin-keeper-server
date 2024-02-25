@@ -139,7 +139,6 @@ const add = async (req, res) => {
                 storage: 0,
                 taking_payment: 0,
                 other_deductions: 0,
-                total_payment: 0,
                 tax_sum: 0,
                 final_profit: 0,
                 composition: [],
@@ -242,7 +241,6 @@ const add = async (req, res) => {
             report.adjustment_amount_count = report.sales_reversal_count + report.correct_sale_count + report.reversal_returns_count + report.correct_return_count; // 026
             report.ppvz_for_pay = report.sale_sum_after_comission - report.return_sum_after_comission + report.adjustment_amount_sum; // 028
             report.delivery_count = report.delivery_to_customer_count + report.delivery_return_count; // 034
-            report.total_payment = report.ppvz_for_pay - report.delivery_sum - report.penalty - report.additional_payment - report.storage - report.taking_payment - report.other_deductions; // 040
             report.tax_sum = report.sale * 0.07; // 044
 
             return report
@@ -333,22 +331,47 @@ const editCostPriceOfArticle = async (req, res) => {
  * @route DELETE /api/report/remove/:id
  * @desc Удаление отчета
  * @access Private
- */
+*/
 const remove = async (req, res) => {
     try {
         const { id } = req.params;
         const user = req.user;
-
+        
         const deletedReport = await ReportModel.findOneAndDelete({ _id: id, user: user._id });
-
+        
         if (!deletedReport) {
             return res.status(400).json({ message: "Не удалось удалить отчет" })
         }
-
+        
         res.status(200).json({ message: "Отчет удален" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Не удалось удалить отчет" });
+    }
+};
+
+/**
+ * @route PATCH /api/report/update-additional-parameters/:id
+ * @desc Изменение себестоимости товара в отчете
+ * @access Private
+ */
+const editAdditionalParameters = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
+
+        const { storage, taking_payment, other_deductions } = req.body;
+
+        const editedReport = await ReportModel.findOneAndUpdate({ _id: id, user: user._id }, { $set: {
+            storage,
+            taking_payment,
+            other_deductions
+        }})
+
+        res.status(200).json(editedReport);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Не удалось изменить отчет" });
     }
 };
 
@@ -357,5 +380,6 @@ module.exports = {
     all,
     report,
     editCostPriceOfArticle,
-    remove
+    remove,
+    editAdditionalParameters
 };

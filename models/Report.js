@@ -72,8 +72,6 @@ const ReportSchema = new mongoose.Schema({
     taking_payment: Number, // Стоимость платной приемки (38)
     other_deductions: Number, // Прочие удержания (39)
 
-    total_payment: Number, // Итого к оплате (40)
-
     tax_sum: Number, // Налоги (44)
 
     // Состав отчета по артикулам
