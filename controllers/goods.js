@@ -64,26 +64,18 @@ const add = async (req, res) => {
 }
 
 /**
- * @route PUT /api/good/update/:id
+ * @route PUT /api/good/update-all
  * @desc Редактирование товара
  * @access Private
  */
-const update = async (req, res) => {
+const updateAll = async (req, res) => {
     try {
         const user = req.user;
-        const { id } = req.params;
-        const { article, cost_price } = req.body;
+        const data = req.body;
 
-        await GoodModel.findOneAndUpdate(
-            {
-                _id: id,
-                user: user._id
-            },
-            {
-                article,
-                cost_price
-            }
-        );
+        data.forEach(async (i) => {
+            await GoodModel.updateOne({ _id: i.id, user: user._id }, { $set: { cost_price: i.cost_price } })
+        });
 
         res.status(204).json({ message: "Товар изменен" });
     } catch {
@@ -118,6 +110,6 @@ module.exports = {
     all,
     good,
     add,
-    update,
+    updateAll,
     remove
 };
