@@ -1,6 +1,9 @@
 const { GoodModel } = require("../models/Good");
 const { UserModel } = require("../models/User");
 const { ReportModel } = require('../models/Report');
+const fs = require('fs');
+const xlsx = require('xlsx');
+const { getReport, getDataForExcelAddingReport } = require("../helpers");
 const axios = require('axios').default;
 
 /**
@@ -159,7 +162,6 @@ const add = async (req, res) => {
                     report.return_sum_after_comission += row.ppvz_for_pay; // 006
                 }
                 if (row.supplier_oper_name == "Оплата брака") {
-                    console.log('Оплата брака')
                     report.scrap_payment_sum += row.ppvz_for_pay; // 009
                     report.scrap_payment_count += row.quantity; // 010
                 }
@@ -208,13 +210,13 @@ const add = async (req, res) => {
                 if (row.supplier_oper_name == "Доплаты") {
                     report.additional_payment += row.additional_payment; // 036
                 }
-                if (!report.composition.find(i => i.article == row.sa_name) && row.supplier_oper_name == "Продажа") {
-                    const good = goods.find(i => i.article == row.sa_name);
+                if (!report.composition.find(i => i.article.toLowerCase() == row.sa_name.toLowerCase()) && row.supplier_oper_name == "Продажа") {
+                    const good = goods.find(i => i.article.toLowerCase() == row.sa_name.toLowerCase());
 
                     if (!good) {
                         async function addNewGood() {
                             const docOfNewGood = new GoodModel({
-                                article: row.sa_name,
+                                article: row.sa_name.toLowerCase(),
                                 user: user._id
                             });
                             await docOfNewGood.save()
@@ -266,6 +268,77 @@ const add = async (req, res) => {
         res.status(500).json({ message: "Что-то пошло не так" });
     }
 };
+
+/**
+ * @route POST /api/report/add-through-excel
+ * @desc Добавление отчета через Excel
+ * @access Private
+ */
+const addThroughExcel = async (req, res) => {
+    try {
+        const { dateFrom, dateTo, realizationreport_id } = req.body;
+        
+        const file = req.file;
+        
+        if (!file || !dateFrom || !dateTo || !realizationreport_id) {
+            return res.status(400).json({ message: "Пожалуйста, укажите все данные отчета" });
+        }
+
+        const user = req.user;
+        
+        if (user.bill <= 0) {
+            return res.status(400).json({ message: "Недостаточно средств на балансе." });
+        }
+
+         const filePath = file.path;
+         const workbook = xlsx.readFile(filePath);
+ 
+         const firstSheetName = workbook.SheetNames[0];
+         const firstSheet = workbook.Sheets[firstSheetName];
+         const data = xlsx.utils.sheet_to_json(firstSheet, { header: 1 });
+ 
+         const columns = data[0];
+ 
+         const rows = data.slice(1);
+ 
+         const objectsArray = rows.map(row => {
+             const obj = {};
+             columns.forEach((column, index) => {
+                obj[column] = row[index];
+             });
+             return obj;
+         });
+         
+        const detalization = getDataForExcelAddingReport({ arr: objectsArray, dateFrom: dateFrom, dateTo: dateTo, realizationreport_id: realizationreport_id });
+
+        fs.unlink(req.file.path, (err) => {
+            if (err) {
+                console.error(err);
+            }
+        });
+
+        const goods = await GoodModel.find();
+
+        const report = getReport(detalization, dateFrom, dateTo, goods, user);
+
+        const addedReport = await ReportModel.findOne({ realizationreport_id: report.realizationreport_id });
+
+        if (addedReport) {
+            return res.status(400).json({ message: 'Отчет с таким ID уже существует' });
+        }
+
+        const doc = new ReportModel(report);
+
+        const reportForDB = await doc.save();
+
+        await UserModel.findOneAndUpdate({ _id: user._id }, { $inc: { bill: -1 } });
+        
+        res.status(200).json(reportForDB);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Что-то пошло не так" });
+    }
+}
 
 /**
  * @route GET /api/report
@@ -378,6 +451,7 @@ const editAdditionalParameters = async (req, res) => {
 
 module.exports = {
     add,
+    addThroughExcel,
     all,
     report,
     editCostPriceOfArticle,

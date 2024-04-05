@@ -1,11 +1,15 @@
 const express = require('express');
+const multer  = require('multer');
+const upload = multer({ dest: 'uploads/' });
 const router = express.Router();
-const { add, all, report,editCostPriceOfArticle, remove, editAdditionalParameters } = require('../controllers/reports');
+const { add, addThroughExcel, all, report,editCostPriceOfArticle, remove, editAdditionalParameters } = require('../controllers/reports');
 const { auth } = require('../middleware/auth');
 
 
 // api/report/add 
 router.post('/add', auth, add);
+// api/report/add-through-excel
+router.post('/add-through-excel', upload.single('file'), auth, addThroughExcel);
 // api/report 
 router.get('/', auth, all);
 // api/report/:id
