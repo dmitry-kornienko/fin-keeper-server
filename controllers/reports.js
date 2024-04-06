@@ -34,6 +34,11 @@ const add = async (req, res) => {
         };
 
         const response = await axios(config);
+
+        if (!response.data) {
+            return res.status(500).json({ message: "Загрузка отчета по API не доступна" })
+        }
+
         const goods = await GoodModel.find();
 
         const getRetailAmountOfArticle = (article) => {
