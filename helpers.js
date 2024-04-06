@@ -112,12 +112,12 @@ const getReport = (arrayFromWB, dateFrom, dateTo, goods, user) => {
     }
 
     arrayFromWB.forEach(row => {
-        if (row.doc_type_name == "Продажа" && row.supplier_oper_name == "Продажа") {
+        if (row.doc_type_name == "Продажа" && (row.supplier_oper_name == "Продажа" || row.supplier_oper_name == "Компенсация подмененного товара")) {
             report.sale_sum_before_comission += row.retail_price_withdisc_rub; // 001
             report.sale_count_before_comission += row.quantity; // 002
             report.sale_sum_after_comission += row.ppvz_for_pay; // 005
         }
-        if (row.doc_type_name == "Продажа" && (row.supplier_oper_name == "Продажа" || row.supplier_oper_name == "Сторно возвратов")) {
+        if (row.doc_type_name == "Продажа" && (row.supplier_oper_name == "Продажа" || row.supplier_oper_name == "Сторно возвратов" || row.supplier_oper_name == "Компенсация подмененного товара")) {
             report.sale += row.retail_amount; // 027
         }
         if (row.doc_type_name == "Возврат" && row.supplier_oper_name == "Возврат") {
@@ -134,7 +134,7 @@ const getReport = (arrayFromWB, dateFrom, dateTo, goods, user) => {
             report.lost_goods_payment_count += row.quantity; // 012
         }
         if (row.supplier_oper_name == "Компенсация подмененного товара") {
-            report.substitute_compensation_sum += row.ppvz_for_pay; // 013
+            report.substitute_compensation_sum += row.retail_amount; // 013
             report.substitute_compensation_count += row.quantity; // 014
         }
         if (row.supplier_oper_name == "Возмещение издержек по перевозке") {
@@ -163,11 +163,9 @@ const getReport = (arrayFromWB, dateFrom, dateTo, goods, user) => {
         }
         if (row.return_amount > 0) {
             report.delivery_return_sum += row.delivery_rub; // 031
-            report.delivery_return_count += row.delivery_amount; // 032
+            report.delivery_return_count += row.return_amount; // 032
         }
-        if (row.supplier_oper_name == "Логистика") {
-            report.delivery_sum += row.delivery_rub; // 033
-        }
+        report.delivery_sum += row.delivery_rub; // 033
         if (row.supplier_oper_name == "Штрафы") {
             report.penalty += row.penalty; // 035
         }
@@ -228,6 +226,7 @@ const getDataForExcelAddingReport = (data) => {
         supplier_oper_name: row["Обоснование для оплаты"],
         retail_price_withdisc_rub: row["Цена розничная с учетом согласованной скидки"],
         delivery_amount: row["Количество доставок"],
+        return_amount: row["Количество возврата"],
         delivery_rub: row["Услуги по доставке товара покупателю"],
         ppvz_for_pay: row["К перечислению Продавцу за реализованный Товар"],
         penalty: row["Общая сумма штрафов"],
