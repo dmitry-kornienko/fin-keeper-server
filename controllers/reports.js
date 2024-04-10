@@ -27,7 +27,7 @@ const add = async (req, res) => {
 
         const config = {
             method: 'get',
-            url: `https://statistics-api.wildberries.ru/api/v1/supplier/reportDetailByPeriod?dateFrom=${dateFrom}&dateTo=${dateTo}`,
+            url: `https://statistics-api.wildberries.ru/api/v5/supplier/reportDetailByPeriod?dateFrom=${dateFrom}&dateTo=${dateTo}`,
             headers: {
               'Authorization': user.tokenWB
             },
