@@ -3,7 +3,7 @@ const { GoodModel } = require("./models/Good");
 const getRetailAmountOfArticle = (detalization, article) => {
     let sum = 0;
     detalization.forEach(item => {
-        if (item.doc_type_name == "Продажа" && item.sa_name == article) {
+        if (item.doc_type_name == "продажа" && item.sa_name == article) {
             sum +=item.ppvz_for_pay
         }
     });
@@ -13,7 +13,7 @@ const getRetailAmountOfArticle = (detalization, article) => {
 const getSaleCountOfArticle = (detalization, article) => {
     let count = 0;
     detalization.forEach(item => {
-        if (item.doc_type_name == "Продажа" && item.supplier_oper_name == "Продажа" && item.sa_name == article) {
+        if (item.doc_type_name == "продажа" && item.supplier_oper_name == "продажа" && item.sa_name == article) {
             count += 1
         }
     })
@@ -23,7 +23,7 @@ const getSaleCountOfArticle = (detalization, article) => {
 const getReturnCountOfArticle = (detalization, article) => {
     let count = 0;
     detalization.forEach(item => {
-        if (item.sa_name == article && item.doc_type_name == "Возврат") {
+        if (item.sa_name == article && item.doc_type_name == "возврат") {
             count += 1
         }
     })
@@ -33,7 +33,7 @@ const getReturnCountOfArticle = (detalization, article) => {
 const getSaleSumOfArticle = (detalization, article) => {
     let sum = 0;
     detalization.forEach(item => {
-        if (item.doc_type_name == "Продажа" && item.sa_name == article) {
+        if (item.doc_type_name == "продажа" && item.sa_name == article) {
             sum +=item.ppvz_for_pay
         }
     });
@@ -43,7 +43,7 @@ const getSaleSumOfArticle = (detalization, article) => {
 const getReturnSumOfArticle = (detalization, article) => {
     let sum = 0;
     detalization.forEach(item => {
-        if (item.sa_name == article && item.doc_type_name == "Возврат") {
+        if (item.sa_name == article && item.doc_type_name == "возврат") {
             sum += item.ppvz_for_pay
         }
     })
@@ -53,7 +53,7 @@ const getReturnSumOfArticle = (detalization, article) => {
 const getDeliveryOfArticle = (detalization, article) => {
     let sum = 0;
     detalization.forEach(item => {
-        if (item.sa_name == article && item.supplier_oper_name == "Логистика") {
+        if (item.sa_name == article && item.supplier_oper_name == "логистика") {
             sum += item.delivery_rub;
         }
     });
@@ -112,48 +112,48 @@ const getReport = (arrayFromWB, dateFrom, dateTo, goods, user) => {
     }
 
     arrayFromWB.forEach(row => {
-        if (row.doc_type_name == "Продажа" && (row.supplier_oper_name == "Продажа" || row.supplier_oper_name == "Компенсация подмененного товара")) {
+        if (row.doc_type_name == "продажа" && (row.supplier_oper_name == "продажа" || row.supplier_oper_name == "компенсация подмененного товара")) {
             report.sale_sum_before_comission += row.retail_price_withdisc_rub; // 001
             report.sale_count_before_comission += row.quantity; // 002
             report.sale_sum_after_comission += row.ppvz_for_pay; // 005
         }
-        if (row.doc_type_name == "Продажа" && (row.supplier_oper_name == "Продажа" || row.supplier_oper_name == "Сторно возвратов" || row.supplier_oper_name == "Компенсация подмененного товара")) {
+        if (row.doc_type_name == "продажа" && (row.supplier_oper_name == "продажа" || row.supplier_oper_name == "сторно возвратов" || row.supplier_oper_name == "компенсация подмененного товара")) {
             report.sale += row.retail_amount; // 027
         }
-        if (row.doc_type_name == "Возврат" && row.supplier_oper_name == "Возврат") {
+        if (row.doc_type_name == "возврат" && row.supplier_oper_name == "возврат") {
             report.return_sum_before_comission += row.retail_price_withdisc_rub; // 003
             report.return_count_before_comission += row.quantity; // 004
             report.return_sum_after_comission += row.ppvz_for_pay; // 006
         }
-        if (row.supplier_oper_name == "Оплата брака") {
+        if (row.supplier_oper_name == "оплата брака") {
             report.scrap_payment_sum += row.ppvz_for_pay; // 009
             report.scrap_payment_count += row.quantity; // 010
         }
-        if (row.supplier_oper_name == "Оплата потерянного товара") {
+        if (row.supplier_oper_name == "оплата потерянного товара") {
             report.lost_goods_payment_sum += row.ppvz_for_pay; // 011
             report.lost_goods_payment_count += row.quantity; // 012
         }
-        if (row.supplier_oper_name == "Компенсация подмененного товара") {
+        if (row.supplier_oper_name == "компенсация подмененного товара") {
             report.substitute_compensation_sum += row.retail_amount; // 013
             report.substitute_compensation_count += row.quantity; // 014
         }
-        if (row.supplier_oper_name == "Возмещение издержек по перевозке") {
+        if (row.supplier_oper_name == "возмещение издержек по перевозке") {
             report.freight_reimbursement_sum += row.ppvz_for_pay; // 015
             report.freight_reimbursement_count += row.quantity; // 016
         }
-        if (row.supplier_oper_name == "Сторно продаж") {
+        if (row.supplier_oper_name == "сторно продаж") {
             report.sales_reversal_sum += row.ppvz_for_pay; // 017
             report.sales_reversal_count += row.quantity; // 018
         }
-        if (row.supplier_oper_name == "Корректная продажа") {
+        if (row.supplier_oper_name == "корректная продажа") {
             report.correct_sale_sum += row.ppvz_for_pay; // 019
             report.correct_sale_count += row.quantity; // 020
         }
-        if (row.supplier_oper_name == "Сторно возвратов") {
+        if (row.supplier_oper_name == "сторно возвратов") {
             report.reversal_returns_sum += row.ppvz_for_pay; // 021
             report.reversal_returns_count += row.quantity; // 022
         }
-        if (row.supplier_oper_name == "Корректный возврат") {
+        if (row.supplier_oper_name == "корректный возврат") {
             report.correct_return_sum += row.ppvz_for_pay; // 023
             report.correct_return_count += row.quantity; // 024
         }
@@ -166,13 +166,13 @@ const getReport = (arrayFromWB, dateFrom, dateTo, goods, user) => {
             report.delivery_return_count += row.return_amount; // 032
         }
         report.delivery_sum += row.delivery_rub; // 033
-        if (row.supplier_oper_name == "Штрафы") {
+        if (row.supplier_oper_name == "штрафы") {
             report.penalty += row.penalty; // 035
         }
-        if (row.supplier_oper_name == "Доплаты") {
+        if (row.supplier_oper_name == "доплаты") {
             report.additional_payment += row.additional_payment; // 036
         }
-        if (!report.composition.find(i => i.article.toLowerCase() == row.sa_name.toLowerCase()) && row.supplier_oper_name == "Продажа") {
+        if (!report.composition.find(i => i.article.toLowerCase() == row.sa_name.toLowerCase()) && row.supplier_oper_name == "продажа") {
             const good = goods.find(i => i.article.toLowerCase() == row.sa_name.toLowerCase());
 
             if (!good) {
@@ -220,10 +220,10 @@ const getDataForExcelAddingReport = (data) => {
         date_from: data.dateFrom,
         date_to: data.dateTo,
         sa_name: row["Артикул поставщика"],
-        doc_type_name: row["Тип документа"],
+        doc_type_name: row["Тип документа"].toLowerCase(),
         quantity: row["Кол-во"],
         retail_amount: row["Вайлдберриз реализовал Товар (Пр)"],
-        supplier_oper_name: row["Обоснование для оплаты"],
+        supplier_oper_name: row["Обоснование для оплаты"].toLowerCase(),
         retail_price_withdisc_rub: row["Цена розничная с учетом согласованной скидки"],
         delivery_amount: row["Количество доставок"],
         return_amount: row["Количество возврата"],
